@@ -63,13 +63,17 @@ int main(int argc, char** argv) {
     DDPCONbits.JTAGEN = 0;
 
     // do your TRIS and LAT commands here
-    
+    TRISBbits.TRISB4 = 1; // make push button an input
+    TRISAbits.TRISA4 = 0; // make green LED an output
+    LATAbits.LATA4 = 1; // set green LED initially high
 
     __builtin_enable_interrupts();
 
     while(1) {
 	    // use _CP0_SET_COUNT(0) and _CP0_GET_COUNT() to test the PIC timing
 		  // remember the core timer runs at half the CPU speed
+         //_CP0_SET_COUNT(0);
+         //_CP0_GET_COUNT();
     }
 }
 
