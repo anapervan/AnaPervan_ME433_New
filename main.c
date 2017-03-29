@@ -70,10 +70,23 @@ int main(int argc, char** argv) {
     __builtin_enable_interrupts();
 
     while(1) {
-	    // use _CP0_SET_COUNT(0) and _CP0_GET_COUNT() to test the PIC timing
-		  // remember the core timer runs at half the CPU speed
-         //_CP0_SET_COUNT(0);
-         //_CP0_GET_COUNT();
-    }
+        
+        while(PORTBbits.RB4 == 0){ // while button is pressed
+            // do nothing
+        }
+        
+        _CP0_SET_COUNT(0); // set the Core Timer to 0
+              
+        while (_CP0_GET_COUNT() < 12000) { // if count less than 0.5ms 
+            // do nothing
+        }
+                  
+        if (PORTAbits.RA4 == 1) { // if LED is on
+            LATAbits.LATA4 = 0; // turn off LED
+        }
+        else { // if LED is off
+            LATAbits.LATA4 = 1; // turn on LED
+        }
+}
 }
 
