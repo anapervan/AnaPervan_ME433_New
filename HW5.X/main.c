@@ -20,7 +20,7 @@
 #pragma config FPBDIV = DIV_1 // divide CPU freq by 1 for peripheral bus clock
 #pragma config FCKSM = CSDCMD // do not enable clock switch
 #pragma config WDTPS = PS1048576 // slowest wdt
-#pragma config WINDIS = 1 // no wdt window
+#pragma config WINDIS = OFF // no wdt window
 #pragma config FWDTEN = 0 // wdt off by default
 #pragma config FWDTWINSZ = 11 // wdt window at 25%
 
@@ -116,13 +116,12 @@ int main() {
     while(1) {
         unsigned char value;
         value = getExpander();
-        if (value == 0b10000000){   // button is NOT pressed
+        value = value >> 7 & 1;
+        if (value == 1 ){   // button is NOT pressed
             setExpander(0,0);       // turn LED off
-            LATAbits.LATA4 = 1;
         }
         else {
             setExpander(0,1);       // turn LED on
-            LATAbits.LATA4 = 0;
         }
         
       _CP0_SET_COUNT(0);
