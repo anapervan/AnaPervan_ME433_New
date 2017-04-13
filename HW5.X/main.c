@@ -1,25 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include<xc.h>           // processor SFR definitions
+#include <xc.h>           // processor SFR definitions
 #include<sys/attribs.h>  // __ISR macro
 
 // DEVCFG0 (data sheet page 241-242)
-#pragma config DEBUG = 11 // no debugging
-#pragma config JTAGEN = 0 // no jtag
-#pragma config ICESEL = 11 // use PGED1 and PGEC1
-#pragma config PWP = 111111111 // no write protect
-#pragma config BWP = 0 // no boot write protect
-#pragma config CP = 1 // no code protect
+#pragma config DEBUG = OFF // no debugging
+#pragma config JTAGEN = OFF // no jtag
+#pragma config ICESEL = ICS_PGx1 // use PGED1 and PGEC1
+#pragma config PWP = OFF // no write protect
+#pragma config BWP = OFF // no boot write protect
+#pragma config CP = OFF // no code protect
 
 // DEVCFG1 (data sheet page 243-244)
-#pragma config FNOSC = 011 // use primary oscillator with pll
-#pragma config FSOSCEN = 0 // turn off secondary oscillator
-#pragma config IESO = 0 // no switching clocks
-#pragma config POSCMOD = 10 // high speed crystal mode
-#pragma config OSCIOFNC = 1 // free up secondary osc pins
-#pragma config FPBDIV = 00 // divide CPU freq by 1 for peripheral bus clock
-#pragma config FCKSM = 11 // do not enable clock switch
-#pragma config WDTPS = 10100 // slowest wdt
+#pragma config FNOSC = PRIPLL // use primary oscillator with pll
+#pragma config FSOSCEN = OFF // turn off secondary oscillator
+#pragma config IESO = OFF // no switching clocks
+#pragma config POSCMOD = HS // high speed crystal mode
+#pragma config OSCIOFNC = OFF // free up secondary osc pins
+#pragma config FPBDIV = DIV_1 // divide CPU freq by 1 for peripheral bus clock
+#pragma config FCKSM = CSDCMD // do not enable clock switch
+#pragma config WDTPS = PS1048576 // slowest wdt
 #pragma config WINDIS = 1 // no wdt window
 #pragma config FWDTEN = 0 // wdt off by default
 #pragma config FWDTWINSZ = 11 // wdt window at 25%
@@ -38,30 +38,36 @@
 #pragma config FUSBIDIO = 1 // USB pins controlled by USB module
 #pragma config FVBUSONIO = 1 // USB BUSON controlled by USB module
 
-#define SLAVE_ADDR = 0b0100000 // slave address
+#define SLAVE_ADDR 0b0100000 // slave address
 
-void initExpander(void)
-void setExpander(char pin, char level)
-unsigned char getExpander(void)
+void initExpander(void);
+void setExpander(unsigned char pin,unsigned char level);
+unsigned char getExpander(void);
 
 void initExpander(){
 i2c_master_start();
 i2c_master_send(SLAVE_ADDR << 1 | 0 );
-i2c_master_send(0);
-i2c_master_send(0b00001111);
+i2c_master_send(0b00000000);
+i2c_master_send(0b11110000);
+i2c_master_stop();
+
+i2c_master_start();
+i2c_master_send((SLAVE_ADDR << 1) | 0);
+i2c_master_send(0x06);
+i2c_master_send(0b11110000);
 i2c_master_stop();
 
 i2c_master_start();
 i2c_master_send(SLAVE_ADDR << 1 | 0);
-i2c_master_send(0x6);
-i2c_master_send(0b00001111);
+i2c_master_send(0x9);
+i2c_master_send(0b00000000);
 i2c_master_stop();
 }
 
 unsigned char getExpander(){
 i2c_master_start();
 i2c_master_send(SLAVE_ADDR << 1 | 0);
-i2c_master_send(0x9);
+i2c_master_send(0x09);
 i2c_master_restart();
 i2c_master_send(SLAVE_ADDR << 1 | 1);
 unsigned char a = 0;
@@ -71,23 +77,16 @@ i2c_master_stop();
 return a;
 }
 
-void setExpander(char pin, char level){
+void setExpander(unsigned char pin, unsigned char level){
+    unsigned char val = level << pin;
 i2c_master_start();
 i2c_master_send(SLAVE_ADDR << 1 | 0);
 i2c_master_send(0x09);
-i2c_master_send(0b00000001);
+i2c_master_send(val);
 i2c_master_stop();
 }
 
-int main(int argc, char** argv) {
-
-      Startup(); 
-  __builtin_disable_interrupts();
-  i2c_slave_setup(SLAVE_ADDR);              // init I2C5, which we use as a slave 
-                                            //  (comment out if slave is on another pic)
-  i2c_master_setup();                       // init I2C2, which we use as a master
-  __builtin_enable_interrupts();
-    
+int main() {
     __builtin_disable_interrupts();
 
     // set the CP0 CONFIG register to indicate that kseg0 is cacheable (0x3)
@@ -107,20 +106,26 @@ int main(int argc, char** argv) {
     TRISAbits.TRISA4 = 0; // make green LED an output
     LATAbits.LATA4 = 1; // set green LED initially high
 
-    __builtin_enable_interrupts();
-
     ANSELBbits.ANSB2 = 0; // set as digital
     ANSELBbits.ANSB3 = 0; // set as digital
-    TRISAbits.TRISA4 = 0;
-    TRISBbits.TRISB4 = 1;
-    I2C2BRG = 223;
-    I2C2CONBITS.ON=1;
+    I2C2BRG = 233;
+    I2C2CONbits.ON=1;
     
+    __builtin_enable_interrupts();
+    initExpander();
     while(1) {
-      
-        if (r==(0b10000000)){LATAbits.LATA4=0;}
-      else {LATAbits.LATA4=1;}
+        unsigned char value;
+        value = getExpander();
+        if (value == 0b10000000){   // button is NOT pressed
+            setExpander(0,0);       // turn LED off
+            LATAbits.LATA4 = 1;
+        }
+        else {
+            setExpander(0,1);       // turn LED on
+            LATAbits.LATA4 = 0;
+        }
+        
       _CP0_SET_COUNT(0);
       while (_CP0_GET_COUNT()<48000000/2000){}; // delay 1 ms
 }
-
+}
