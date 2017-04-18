@@ -40,6 +40,7 @@
 #define COLOR2 0xFFFF // Background color for "off" pixels
 
 void display_character(char c, char x, char y, char color1);
+void draw_bar_x(char x, char y, char color1, char len, char w, char maxlen);
 
 void display_character(char c, char x, char y, char color1){
 // c = character, x,y = location, color1 = text, color2 = background 
@@ -48,17 +49,32 @@ char_row = c - 0x20; // c is what row in the array ascii to use
 int i, j;	// loop through 5 times to display each column
 for(i = 0; i < 5; i++){
     if((x+i) < (128-5)){
-        for(j = 0; j < 8; j++ ){
+        for(j = 0; j < 8; j++){
             if((y+j) < (128-7)){
                 if((ASCII[char_row][i] >> j & 1) == 1){
                      LCD_drawPixel(x+i, y+j, color1);
                 }
                      else{
-                          LCD_drawPixel(x+1, y+j, COLOR2);
+                          LCD_drawPixel(x+i, y+j, COLOR2);
                      }
                 }
             }
         }
+    }
+}
+
+void draw_bar_x(char x, char y, char color1, char len, char w, char maxlen){
+    // Draw 0 to length in one color and length to max length in another color, to eliminate flicker
+    int i, j;
+	for (i = 0; i < (len+1); i++){
+		if((x+i) < (128-5)){
+			for(j = 0; j < (w+1); j++ ){
+				if((y+j) < (128-7)){
+					LCD_drawPixel(x+i, y+j, color1);
+					// Draw 0 to length in one color and length to max length in another color, to eliminate flicker
+				}
+			}
+		}
     }
 }
 
@@ -84,15 +100,28 @@ int main() {
     LATAbits.LATA4 = 1; // set green LED initially high
 
     __builtin_enable_interrupts();
+    SPI1_init();
     LCD_init();
+    LCD_clearScreen(COLOR2);
+    
     
     while(1) {
-        char c, x, y, color1;
-        c = 0x48; // H
-        x = 50;
+        char c, x, y, color1, msg[100];
+        int i = 0;
+        x = 37;
         y = 50;
         color1 = 0x0000; // black
-     display_character(c, x, y, color1);
+        
+        sprintf(msg, "HELLO %d",i);
+        // display_string(char* msg, x, y, color1)
+
+        while(msg[i]!=0){ // stop printing after the last letter
+            c = msg[i]; // H
+            x = x + 5;
+            display_character(c, x, y, color1);
+            i++;
+        }
+        
       _CP0_SET_COUNT(0);
       while (_CP0_GET_COUNT()<48000000/2000){}; // delay 1 ms
 }
