@@ -37,49 +37,100 @@
 #pragma config FUSBIDIO = ON // USB pins controlled by USB module
 #pragma config FVBUSONIO = ON // USB BUSON controlled by USB module
 
-#define COLOR2 0xFFFF // Background color for "off" pixels
+#define COLOR2 0x0000 // Background color for "off" pixels
 
-void display_character(char c, char x, char y, char color1);
-void draw_bar_x(char x, char y, char color1, char len, char w, char maxlen);
+void display_character(char c, char x, char y, unsigned short color1);
+void draw_bar_x(char x_bar, char y_bar, unsigned short color_bar, char len, char w, char maxlen);
 
-void display_character(char c, char x, char y, char color1){
-// c = character, x,y = location, color1 = text, color2 = background 
+void display_character(char c, char x, char y, unsigned short color1) {
+    // c = character, x,y = location, color1 = text, color2 = background 
     char char_row;
-char_row = c - 0x20; // c is what row in the array ascii to use
-int i, j;	// loop through 5 times to display each column
-for(i = 0; i < 5; i++){
-    if((x+i) < (128-5)){
-        for(j = 0; j < 8; j++){
-            if((y+j) < (128-7)){
-                if((ASCII[char_row][i] >> j & 1) == 1){
-                     LCD_drawPixel(x+i, y+j, color1);
-                }
-                     else{
-                          LCD_drawPixel(x+i, y+j, COLOR2);
-                     }
+    char_row = c - 0x20; // c is what row in the array ascii to use
+    int i, j; // loop through 5 times to display each column
+    for (i = 0; i < 5; i++) {
+        if ((x + i) < (128 - 5)) {
+            for (j = 0; j < 8; j++) {
+                if ((y + j) < (128 - 7)) {
+                    if ((ASCII[char_row][i] >> j & 1) == 1) {
+                        LCD_drawPixel(x + i, y + j, color1);
+                    } else {
+                        LCD_drawPixel(x + i, y + j, COLOR2);
+                    }
                 }
             }
         }
     }
 }
 
-void draw_bar_x(char x, char y, char color1, char len, char w, char maxlen){
-    // Draw 0 to length in one color and length to max length in another color, to eliminate flicker
-    int i, j;
-	for (i = 0; i < (len+1); i++){
-		if((x+i) < (128-5)){
-			for(j = 0; j < (w+1); j++ ){
-				if((y+j) < (128-7)){
-					LCD_drawPixel(x+i, y+j, color1);
-					// Draw 0 to length in one color and length to max length in another color, to eliminate flicker
-				}
-			}
-		}
+void draw_string(char msg[100], char x, char y, unsigned short color1) {
+    int k = 0;
+    char c;
+    while (msg[k] != 0) { // stop printing after the last letter
+        c = msg[k];
+        x = x + 5;
+        display_character(c, x, y, color1);
+        k++;
     }
 }
 
+void draw_bar_x(char x, char y, unsigned short color1, char len, char w, char maxlen) {
+    
+    int i, j;
+
+    if (len > 0) { // positive
+        // Draw 0 to length in color1
+        for (i = 0; i < (len + 1); i++) {
+            if ((x + i) < 128) {
+                for (j = 0; j < (w + 1); j++) {
+                    if ((y + j) < 128) {
+                        LCD_drawPixel(x + i, y + j, color1);
+                    }
+                }
+            }
+        }
+        // Draw length to max length in background color
+        for (i = len + 1; i < (maxlen + 1); i++) {
+            if ((x + i) < 128) {
+                for (j = 0; j < (w + 1); j++) {
+                    if ((y + j) < 128) {
+                        LCD_drawPixel(x + i, y + j, COLOR2);
+                    }
+                }
+            }
+        }
+    }
+    else{ // negative
+        // Draw 0 to length in color1
+        for (i = 0; i > (len - 1); i--) {
+            if ((x + i) < 128) {
+                for (j = 0; j < (w + 1); j++) {
+                    if ((y + j) < 128) {
+                        LCD_drawPixel(x + i, y + j, color1);
+                    }
+                }
+            }
+        }
+        // Draw length to max length in background color
+        for (i = len - 1; i > (-maxlen - 1); i--) {
+            if ((x + i) < 128) {
+                for (j = 0; j < (w + 1); j++) {
+                    if ((y + j) < 128) {
+                        LCD_drawPixel(x + i, y + j, COLOR2);
+                    }
+                }
+            }
+        }
+        
+    }
+}
 
 int main() {
+    char c, x, y, msg[100], x_bar, y_bar, len, w, maxlen;
+    unsigned short color1, color_bar;
+    x = 42;
+    y = 32;
+    color1 = WHITE;
+
     __builtin_disable_interrupts();
 
     // set the CP0 CONFIG register to indicate that kseg0 is cacheable (0x3)
@@ -103,26 +154,42 @@ int main() {
     SPI1_init();
     LCD_init();
     LCD_clearScreen(COLOR2);
-    
-    
-    while(1) {
-        char c, x, y, color1, msg[100];
-        int i = 0;
-        x = 37;
-        y = 50;
-        color1 = 0x0000; // black
-        
-        sprintf(msg, "HELLO %d",i);
-        // display_string(char* msg, x, y, color1)
 
-        while(msg[i]!=0){ // stop printing after the last letter
-            c = msg[i]; // H
-            x = x + 5;
-            display_character(c, x, y, color1);
-            i++;
-        }
+    sprintf(msg, "HELLO");
+    draw_string(msg, x, y, color1);
+
+    while (1) {
+        int n = 50, k = 0;
+        float fps; 
         
-      _CP0_SET_COUNT(0);
-      while (_CP0_GET_COUNT()<48000000/2000){}; // delay 1 ms
-}
+        for (n = 50; n>-51; n--) {
+             _CP0_SET_COUNT(0);
+            x = 72;
+            sprintf(msg, "%d", n);
+            draw_string(msg, x, y, color1); //draw number
+
+            x_bar = 64;
+            y_bar = 55;
+            color_bar = CYAN;
+            len = n;
+            w = 1;
+            maxlen = 50;
+            draw_bar_x(x_bar, y_bar, color_bar, len, w, maxlen);
+
+            fps = 24000000.0/_CP0_GET_COUNT();
+            sprintf(msg, "%3.2f", fps);
+            draw_string(msg,40,75,BLUE);            
+            
+            _CP0_SET_COUNT(0);
+            while (_CP0_GET_COUNT() < 48000000/2/5) {
+            }; // delay 5 Hz = 200 ms
+        }
+        sprintf(msg, "%d", n);
+        draw_string(msg, x, y, COLOR2); // clear the space between 50 and -50
+        draw_bar_x(x_bar, y_bar, COLOR2, len, w, maxlen); // clear bar      
+
+        _CP0_SET_COUNT(0);
+        while (_CP0_GET_COUNT() < 48000000 / 10) {
+        }; // delay 200 ms
+    }
 }
