@@ -49,7 +49,13 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 // *****************************************************************************
 
 #include "app.h"
-
+#include "i2c_master.h"
+#include "ILI9163C.h"
+#include "other_functions.h"
+#include <stdio.h>
+#include <xc.h>
+#include <stdlib.h>
+#include<sys/attribs.h>  // __ISR macro
 
 // *****************************************************************************
 // *****************************************************************************
@@ -70,6 +76,10 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
  */
 
 APP_DATA appData;
+#define SLAVE_ADDR 0x6B // slave address
+int L = 14;
+signed short new_data[7];
+unsigned char data[14];
 
 /* Mouse Report */
 MOUSE_REPORT mouseReport APP_MAKE_BUFFER_DMA_READY;
@@ -265,8 +275,10 @@ void APP_Initialize(void) {
  */
 
 void APP_Tasks(void) {
-    static uint8_t inc = 0;
-    
+    static int8_t vector = 0;
+    static uint8_t movement_length = 0;
+    int8_t dir_table[] = {-4, -4, -4, 0, 4, 4, 4, 0};
+
     /* Check the application's current state. */
     switch (appData.state) {
             /* Application's initial state. */
@@ -301,19 +313,19 @@ void APP_Tasks(void) {
             break;
 
         case APP_STATE_MOUSE_EMULATE:
+            i2c_read_multiple(SLAVE_ADDR, 0x20, data, L);
+            process_data(data, new_data, L);
             
-            if (inc == 10){
+            // every 10th loop, or 100 times per second
+            if (movement_length > 10) {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
-                appData.xCoordinate = (int8_t) 1;
-                appData.yCoordinate = (int8_t) 1;
+                appData.xCoordinate = (int8_t) dir_table[vector & 0x07];
+                appData.yCoordinate = (int8_t) dir_table[(vector + 2) & 0x07];
+                vector++;
+                movement_length = 0;
             }
-            else if (inc != 10){
-                appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
-                appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
-                appData.xCoordinate = (int8_t) 0;
-                appData.yCoordinate = (int8_t) 0;
-            }
+
 
             if (!appData.isMouseReportSendBusy) {
                 /* This means we can send the mouse report. The
@@ -365,8 +377,8 @@ void APP_Tasks(void) {
                             sizeof (MOUSE_REPORT));
                     appData.setIdleTimer = 0;
                 }
+                movement_length++;
             }
-            inc++;
             break;
 
         case APP_STATE_ERROR:
