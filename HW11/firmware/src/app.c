@@ -345,20 +345,23 @@ void APP_Tasks(void) {
 
             i2c_read_multiple(SLAVE_ADDR, 0x20, data, L);
             process_data(data, new_data, L);
+            int x_mouse = ((float) new_data[4]) / 100;
+            int y_mouse = ((float) new_data[5]) / 100;
 
             if (inc == 10) {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
-                appData.xCoordinate = (int8_t) ((float) new_data[4])/1000;
-                appData.yCoordinate = (int8_t) 1;
+                appData.xCoordinate = (int8_t) x_mouse;
+                appData.yCoordinate = (int8_t) y_mouse;
                 inc = 0;
             } else {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.xCoordinate = (int8_t) 0;
                 appData.yCoordinate = (int8_t) 0;
+                inc++;
             }
-            inc++;
+
 
             if (!appData.isMouseReportSendBusy) {
                 /* This means we can send the mouse report. The
