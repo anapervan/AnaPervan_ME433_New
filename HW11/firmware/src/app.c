@@ -320,11 +320,11 @@ void APP_Tasks(void) {
             i2c_read_multiple(SLAVE_ADDR, 0x20, data, L);
             process_data(data, new_data, L);
 
-            if (inc == 10) {
+            if (inc == 20) {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
-                appData.xCoordinate = (signed short) (new_data[4])/15000;
-                appData.yCoordinate = (signed short) 1;
+                appData.xCoordinate = (int8_t) 1;
+                appData.yCoordinate = (int8_t) 1;
                 inc = 0;
             } else {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
