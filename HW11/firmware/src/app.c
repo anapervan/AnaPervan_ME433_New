@@ -49,13 +49,13 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 // *****************************************************************************
 
 #include "app.h"
-#include "i2c_master.h"
-#include "ILI9163C.h"
-#include "other_functions.h"
 #include <stdio.h>
 #include <xc.h>
 #include <stdlib.h>
 #include<sys/attribs.h>  // __ISR macro
+#include "i2c_master.h"
+#include "ILI9163C.h"
+#include "other_functions.h"
 
 // *****************************************************************************
 // *****************************************************************************
@@ -77,6 +77,7 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 
 APP_DATA appData;
 #define SLAVE_ADDR 0x6B // slave address
+#define COLOR2 0x0000 // Background color for "off" pixels
 int L = 14;
 signed short new_data[7];
 unsigned char data[14];
@@ -84,7 +85,6 @@ unsigned char data[14];
 /* Mouse Report */
 MOUSE_REPORT mouseReport APP_MAKE_BUFFER_DMA_READY;
 MOUSE_REPORT mouseReportPrevious APP_MAKE_BUFFER_DMA_READY;
-
 
 // *****************************************************************************
 // *****************************************************************************
@@ -265,6 +265,11 @@ void APP_Initialize(void) {
     //appData.emulateMouse = true;
     appData.hidInstance = 0;
     appData.isMouseReportSendBusy = false;
+
+    SPI1_init();
+    LCD_init();
+    LCD_clearScreen(COLOR2);
+    init_IMU();
 }
 
 /******************************************************************************
@@ -275,9 +280,7 @@ void APP_Initialize(void) {
  */
 
 void APP_Tasks(void) {
-    static int8_t vector = 0;
-    static uint8_t movement_length = 0;
-    int8_t dir_table[] = {-4, -4, -4, 0, 4, 4, 4, 0};
+    static uint8_t inc = 0;
 
     /* Check the application's current state. */
     switch (appData.state) {
@@ -313,19 +316,21 @@ void APP_Tasks(void) {
             break;
 
         case APP_STATE_MOUSE_EMULATE:
+           
             i2c_read_multiple(SLAVE_ADDR, 0x20, data, L);
             process_data(data, new_data, L);
-            
-            // every 10th loop, or 100 times per second
-            if (movement_length > 10) {
+
+            if (inc == 10) {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
-                appData.xCoordinate = (int8_t) dir_table[vector & 0x07];
-                appData.yCoordinate = (int8_t) dir_table[(vector + 2) & 0x07];
-                vector++;
-                movement_length = 0;
+                appData.xCoordinate = (int8_t) (new_data[4]) / 1000;
+                appData.yCoordinate = (int8_t) (new_data[5]) / 1000;
+            } else {
+                appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
+                appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
+                appData.xCoordinate = (int8_t) 0;
+                appData.yCoordinate = (int8_t) 0;
             }
-
 
             if (!appData.isMouseReportSendBusy) {
                 /* This means we can send the mouse report. The
@@ -377,8 +382,9 @@ void APP_Tasks(void) {
                             sizeof (MOUSE_REPORT));
                     appData.setIdleTimer = 0;
                 }
-                movement_length++;
+                inc++;
             }
+
             break;
 
         case APP_STATE_ERROR:
