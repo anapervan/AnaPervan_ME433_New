@@ -345,8 +345,8 @@ void APP_Tasks(void) {
 
             i2c_read_multiple(SLAVE_ADDR, 0x20, data, L);
             process_data(data, new_data, L);
-            int x_mouse = ((float) new_data[4]) / 100;
-            int y_mouse = ((float) new_data[5]) / 100;
+            int x_mouse = ((float) new_data[4]) / 500;
+            int y_mouse = ((float) new_data[5]) / 500;
 
             if (inc == 10) {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
