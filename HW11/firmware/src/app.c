@@ -325,6 +325,7 @@ void APP_Tasks(void) {
                 appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.xCoordinate = (int8_t) 1;
                 appData.yCoordinate = (int8_t) 1;
+                inc = 0;
             } else {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
