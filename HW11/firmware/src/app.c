@@ -81,7 +81,7 @@ APP_DATA appData;
 //int L = 14;
 //signed short new_data[7];
 //unsigned char data[14];
-int k, m, x, y, w, maxlen, len = 14; // if wanted only accelerometer data, length = 6, reg = 0x28 
+int len = 14; // if wanted only accelerometer data, length = 6, reg = 0x28 
 signed short new_data[7], x_acc, y_acc;
 char msg[100];
 unsigned char data[14];
@@ -346,28 +346,25 @@ void APP_Tasks(void) {
             break;
 
         case APP_STATE_MOUSE_EMULATE:
-            i2c_read_multiple(SLAVE_ADDR, 0x20, data, len);
-            process_data(data, new_data, len);
-            x = 64;
-            y = 64;
-            w = 2;
-            maxlen = 64;
-            x_acc = new_data[4]*(64. / 15000.);
-            y_acc = new_data[5]*(64. / 15000.);
-            sprintf(msg, "x acc: %3.0d", x_acc); // print x acceleration data
-            draw_string(msg, 2, 20, WHITE);
-            sprintf(msg, "y acc: %3.0d", y_acc); // print y acceleration data
-            draw_string(msg, 2, 30, WHITE);
-            //i2c_read_multiple(SLAVE_ADDR, 0x20, data, L);
-            //process_data(data, new_data, L);
-            // int x_mouse = ((float) new_data[4]) / 500;
-            //int y_mouse = ((float) new_data[5]) / 500;
-
             if (inc == 10) {
+                i2c_read_multiple(SLAVE_ADDR, 0x20, data, len);
+                process_data(data, new_data, len);
+                x_acc = new_data[4]*(64. / 15000.);
+                y_acc = new_data[5]*(64. / 15000.);
+                sprintf(msg, "x acc: %3.0d", x_acc); // print x acceleration data
+                draw_string(msg, 2, 20, WHITE);
+                sprintf(msg, "y acc: %3.0d", y_acc); // print y acceleration data
+                draw_string(msg, 2, 30, WHITE);
+
+                //i2c_read_multiple(SLAVE_ADDR, 0x20, data, L);
+                //process_data(data, new_data, L);
+                // int x_mouse = ((float) new_data[4]) / 500;
+                //int y_mouse = ((float) new_data[5]) / 500;
+
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
-                appData.xCoordinate = (int8_t) x_acc;
-                appData.yCoordinate = (int8_t) y_acc;
+                appData.xCoordinate = (int8_t) 1;
+                appData.yCoordinate = (int8_t) 1;
                 inc = 0;
             } else {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
