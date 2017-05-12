@@ -323,8 +323,8 @@ void APP_Tasks(void) {
             if (inc == 10) {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
                 appData.mouseButton[1] = MOUSE_BUTTON_STATE_RELEASED;
-                appData.xCoordinate = (int8_t) new_data[4]/10000;
-                appData.yCoordinate = (int8_t) 1;
+                appData.xCoordinate = (signed short) (new_data[4])/15000;
+                appData.yCoordinate = (signed short) 1;
                 inc = 0;
             } else {
                 appData.mouseButton[0] = MOUSE_BUTTON_STATE_RELEASED;
