@@ -266,9 +266,35 @@ void APP_Initialize(void) {
     appData.hidInstance = 0;
     appData.isMouseReportSendBusy = false;
 
+    __builtin_disable_interrupts();
+
+    // set the CP0 CONFIG register to indicate that kseg0 is cacheable (0x3)
+    __builtin_mtc0(_CP0_CONFIG, _CP0_CONFIG_SELECT, 0xa4210583);
+
+    // 0 data RAM access wait states
+    BMXCONbits.BMXWSDRM = 0x0;
+
+    // enable multi vector interrupts
+    INTCONbits.MVEC = 0x1;
+
+    // disable JTAG to get pins back
+    DDPCONbits.JTAGEN = 0;
+
+    // do your TRIS and LAT commands here
+    TRISBbits.TRISB4 = 1; // make push button an input
+    TRISAbits.TRISA4 = 0; // make green LED an output
+    LATAbits.LATA4 = 1; // set green LED initially high
+
+    ANSELBbits.ANSB2 = 0; // set as digital
+    ANSELBbits.ANSB3 = 0; // set as digital
+    I2C2BRG = 233;
+    I2C2CONbits.ON = 1;
+
+    __builtin_enable_interrupts();
+
     SPI1_init();
     LCD_init();
-    LCD_clearScreen(COLOR2);
+    LCD_clearScreen(BLACK);
     init_IMU();
 }
 
