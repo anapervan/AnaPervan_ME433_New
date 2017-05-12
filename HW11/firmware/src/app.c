@@ -316,7 +316,7 @@ void APP_Tasks(void) {
             break;
 
         case APP_STATE_MOUSE_EMULATE:
-           
+
             i2c_read_multiple(SLAVE_ADDR, 0x20, data, L);
             process_data(data, new_data, L);
 
@@ -331,7 +331,7 @@ void APP_Tasks(void) {
                 appData.xCoordinate = (int8_t) 0;
                 appData.yCoordinate = (int8_t) 0;
             }
-
+            inc++;
             if (!appData.isMouseReportSendBusy) {
                 /* This means we can send the mouse report. The
                    isMouseReportBusy flag is updated in the HID Event Handler. */
@@ -382,7 +382,6 @@ void APP_Tasks(void) {
                             sizeof (MOUSE_REPORT));
                     appData.setIdleTimer = 0;
                 }
-                inc++;
             }
 
             break;
