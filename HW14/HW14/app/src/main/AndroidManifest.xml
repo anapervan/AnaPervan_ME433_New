@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.ana.androidusb">
-
-    <uses-feature android:name="android.hardware.usb.host" />
+    package="com.example.ana.hw14">
 
     <application
         android:allowBackup="true"
@@ -24,6 +22,7 @@
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter" />
         </activity>
+        <uses-feature android:name="android.hardware.usb.host" />
     </application>
 
 </manifest>
