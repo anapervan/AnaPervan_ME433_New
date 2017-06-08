@@ -67,9 +67,7 @@ int rxPos = 0; // how much data has been stored
 int gotRx = 0; // the flag
 int rxValLeft = 0; // Left value
 int rxValRight = 0; // Right value
-int dutyLeft = 0; // Left duty cycle
 unsigned char rxDirLeft = 0; // Left direction
-int dutyRight = 0; // Right duty cycle
 unsigned char rxDirRight = 0; // Right direction
 
 // *****************************************************************************
@@ -477,11 +475,12 @@ void APP_Tasks(void) {
             appData.state = APP_STATE_WAIT_FOR_WRITE_COMPLETE;
 
             if (gotRx) {
+                          
                  // when you read data from the host
-                LATAbits.LATA1 = 1; // direction
-                OC1RS = 600; // velocity, 50%
-                LATBbits.LATB3 = 0; // direction
-                OC4RS = 600; // velocity, 50%
+                LATAbits.LATA1 = rxDirLeft; // direction
+                OC1RS = rxValLeft; // velocity Left
+                LATBbits.LATB3 = rxDirRight; // direction
+                OC4RS = rxValRight; // velocity Right
                 
                 len =  sprintf(dataOut, "got: %d %d %d %d\r\n", rxValLeft,rxDirLeft,rxValRight,rxDirRight);
                 i++;
