@@ -57,7 +57,7 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 // Section: Global Data Definitions
 // *****************************************************************************
 // *****************************************************************************
-#define MAX_DUTY 1000
+
 uint8_t APP_MAKE_BUFFER_DMA_READY dataOut[APP_READ_BUFFER_SIZE];
 uint8_t APP_MAKE_BUFFER_DMA_READY readBuffer[APP_READ_BUFFER_SIZE];
 
@@ -73,8 +73,8 @@ unsigned char rxDirRight = 0; // Right direction
 int error = 0;
 int left = 0;
 int right = 0;
-int kp = 5;
-
+float kp = 3;
+int MAX_DUTY = 550;
 
 // *****************************************************************************
 /* Application Data
@@ -482,7 +482,7 @@ void APP_Tasks(void) {
 
             if (gotRx) {
                 // code from MergingUSBandCamera          
-                 error = rxVal - 240; // 240 means the dot is in the middle of the screen
+                 error = rxVal - 319; // 240 means the dot is in the middle of the screen
                     if (error<0) { // slow down the left motor to steer to the left
                         error  = -error;
                         left = MAX_DUTY - kp*error;
@@ -496,14 +496,14 @@ void APP_Tasks(void) {
                         left = MAX_DUTY;
                         if (right<0) {
                             right = 0;
-                        }
+                        } 
                     }
           
                  // when you read data from the host
-                LATAbits.LATA1 = 1; // direction - always go forward
-                LATBbits.LATB3 = 0; // direction - always go forward
-                OC1RS = left; // velocity Left
-                OC4RS = right; // velocity Right
+                LATAbits.LATA1 = 0; // direction - always go forward
+                LATBbits.LATB3 = 1; // direction - always go forward
+                OC1RS = right; // velocity Right
+                OC4RS = left; // velocity Left
                 
                // len =  sprintf(dataOut, "got: %d %d %d %d\r\n", rxValLeft,rxDirLeft,rxValRight,rxDirRight);
                 i++;
