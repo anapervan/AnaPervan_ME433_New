@@ -57,18 +57,24 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 // Section: Global Data Definitions
 // *****************************************************************************
 // *****************************************************************************
-
+#define MAX_DUTY 1000
 uint8_t APP_MAKE_BUFFER_DMA_READY dataOut[APP_READ_BUFFER_SIZE];
 uint8_t APP_MAKE_BUFFER_DMA_READY readBuffer[APP_READ_BUFFER_SIZE];
+
 int len, i = 0;
 int startTime = 0;
 char rx[64]; // the raw data
 int rxPos = 0; // how much data has been stored
 int gotRx = 0; // the flag
-int rxValLeft = 0; // Left value
-int rxValRight = 0; // Right value
+int rxVal = 0; // a place to store the int that was recieved
 unsigned char rxDirLeft = 0; // Left direction
 unsigned char rxDirRight = 0; // Right direction
+
+int error = 0;
+int left = 0;
+int right = 0;
+int kp = 5;
+
 
 // *****************************************************************************
 /* Application Data
@@ -418,7 +424,7 @@ void APP_Tasks(void) {
                     // if you got a newline
                     if (appData.readBuffer[ii] == '\n' || appData.readBuffer[ii] == '\r') {
                         rx[rxPos] = 0; // end the array
-                        sscanf(rx, "%d %d %d %d", &rxValLeft, &rxDirLeft, &rxValRight, &rxDirRight); // get the int out of the array
+                        sscanf(rx, "%d ", &rxVal); // get the int
                         gotRx = 1; // set the flag
                         break; // get out of the while loop
                     } else if (appData.readBuffer[ii] == 0) {
@@ -475,14 +481,31 @@ void APP_Tasks(void) {
             appData.state = APP_STATE_WAIT_FOR_WRITE_COMPLETE;
 
             if (gotRx) {
-                          
+                // code from MergingUSBandCamera          
+                 error = rxVal - 240; // 240 means the dot is in the middle of the screen
+                    if (error<0) { // slow down the left motor to steer to the left
+                        error  = -error;
+                        left = MAX_DUTY - kp*error;
+                        right = MAX_DUTY;
+                        if (left < 0){
+                            left = 0;
+                        }
+                    }
+                    else { // slow down the right motor to steer to the right
+                        right = MAX_DUTY - kp*error;
+                        left = MAX_DUTY;
+                        if (right<0) {
+                            right = 0;
+                        }
+                    }
+          
                  // when you read data from the host
-                LATAbits.LATA1 = rxDirLeft; // direction
-                OC1RS = rxValLeft; // velocity Left
-                LATBbits.LATB3 = rxDirRight; // direction
-                OC4RS = rxValRight; // velocity Right
+                LATAbits.LATA1 = 1; // direction - always go forward
+                LATBbits.LATB3 = 0; // direction - always go forward
+                OC1RS = left; // velocity Left
+                OC4RS = right; // velocity Right
                 
-                len =  sprintf(dataOut, "got: %d %d %d %d\r\n", rxValLeft,rxDirLeft,rxValRight,rxDirRight);
+               // len =  sprintf(dataOut, "got: %d %d %d %d\r\n", rxValLeft,rxDirLeft,rxValRight,rxDirRight);
                 i++;
                 USB_DEVICE_CDC_Write(USB_DEVICE_CDC_INDEX_0,
                         &appData.writeTransferHandle,
